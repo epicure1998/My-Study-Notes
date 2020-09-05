@@ -1,7 +1,6 @@
 [TOC]
 
 
-
 # Redis
 
 > Nosql+RDBMS关系型数据库
@@ -18,7 +17,7 @@
 
 **互联网基本的架构：**
 
-![image-20200905125210865](https://github.com/epicure1998/My-Study-Notes/blob/master/Redis%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/image-20200905125210865.png)
+![image-20200905125210865](/Users/apple/Desktop/My-Study-Notes/Redis读书笔记/image-20200905125210865.png)
 
 ## 为什么要用Nosql(非关系型数据库)
 
@@ -79,25 +78,15 @@ cp -l src/redis-server /usr/local/bin && cp -l src/redis-cli /usr/local/bin
 > 
 
 * 先`shutdown`然后`exit`:退出redis
-
 * `redis-server [conf/path]`:启动redis服务端
-
 * `select 3`选择数据库，切换数据库
-
 * `flushall` 清空数据库
-
 * `flushdb` 清空当前数据库
-
 * `keys *` 查看当前数据库所有数据
-
 * `exists` 判断键是否存在
-
 * `move [key] 1` 从指定数据库移除
-
 * `expire [key] 10`设置过期的时间
-
 * `ttl` 查看过期剩余的时间
-
 * `type [key]`查看当前key的类型
 
 ### redis的基本数据类型
@@ -244,7 +233,7 @@ cp -l src/redis-server /usr/local/bin && cp -l src/redis-cli /usr/local/bin
 
 * `pfadd`：添加元素
 
-	```bash
+	```shell
 	127.0.0.1:6379> pfadd key element [element ...]
 	```
 
@@ -288,9 +277,119 @@ cp -l src/redis-server /usr/local/bin && cp -l src/redis-cli /usr/local/bin
  	bitcount key [start end]
 	```
 
+***
 
+## Redis的基本事务操作
 
+Redis 事务没有隔离级别的钙奶呢，事务不保证原子性
 
+> Redis 事务的本质：一组命令的集合
+>
+> 可以理解为按照队列执行一组命令，按照顺序
+>
+> * 一次性
+> * 顺序性
+> * 排他性
+
+#### Redis 的事务：
+
+1. 开启事务
+2. 命令入列
+3. 执行事务
+
+> 开启事务
+
+`multi`:开启事务
+
+> 放弃事务
+
+`discard`：事务中的命令都不会被执行
+
+> 命令入列
+
+> 编译时异常：命令写错了
+>
+> 队列中所有的命令都不会执行成功
+>
+> ```shell
+> 127.0.0.1:6379> multi
+> OK
+> 127.0.0.1:6379> set k1 1
+> QUEUED
+> 127.0.0.1:6379> set k2 2
+> QUEUED
+> 127.0.0.1:6379> gese
+> (error) ERR unknown command `gese`, with args beginning with: 
+> 127.0.0.1:6379> exec
+> (error) EXECABORT Transaction discarded because of previous errors.
+> ```
+
+>运行时异常：
+>
+>运行时错误的命令行执行失败，其他的命令执行会成功 
+>
+>```shell
+>127.0.0.1:6379> multi
+>OK
+>127.0.0.1:6379> set k1 1
+>QUEUED
+>127.0.0.1:6379> set k2 2
+>QUEUED
+>127.0.0.1:6379> set k3 3
+>QUEUED
+>127.0.0.1:6379> set k4 "k4"
+>QUEUED
+>127.0.0.1:6379> incr k4
+>QUEUED
+>127.0.0.1:6379> exec
+>1) OK
+>2) OK
+>3) OK
+>4) OK
+>5) (error) ERR value is not an integer or out of rang
+>```
+
+## Redis的锁
+
+悲观锁：
+
+* 
+
+乐观锁：
+
+* 更新数据时判断，是否有人改动过数据 
+
+* `watch [key]`:开启乐观锁监视，如果在事务执行时发现监视的值发生过改变，则会执行失败
+
+   ```shell
+   127.0.0.1:6379> set money 100
+   OK
+   127.0.0.1:6379> watch money
+   OK
+   127.0.0.1:6379> multi
+   OK
+   127.0.0.1:6379> incrby money 200
+   QUEUED
+   127.0.0.1:6379> decrby money 50
+   QUEUED
+   127.0.0.1:6379> exec
+   (nil)
+   127.0.0.1:6379> get money
+   "10"
+   
+   ```
+
+   执行过程中另一个客户端对	**money**的值进行了改动。
+
+* `unwatch [key]`:解除监视
+
+* 如果另一个终端对这个key 先进行改动过，又改回来原来的值，事务是否能够执行成功呢？
+
+   > 不行！
+
+***
+
+## Jedis
 
 
 
