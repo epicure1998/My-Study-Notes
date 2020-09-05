@@ -18,7 +18,7 @@
 
 **互联网基本的架构：**
 
-![image-20200905125210865](/Users/apple/Desktop/My-Study-Notes/Redis读书笔记/image-20200905125210865.png)
+![image-20200905125210865](https://github.com/epicure1998/My-Study-Notes/blob/master/Redis%E8%AF%BB%E4%B9%A6%E7%AC%94%E8%AE%B0/image-20200905125210865.png)
 
 ## 为什么要用Nosql(非关系型数据库)
 
