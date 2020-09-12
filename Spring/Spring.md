@@ -31,5 +31,52 @@
 
 缺点： 通过这种方式我们只能做一些简单的切面，没办法获得方法的信息，很多关于log的记录都没办法实现
 
+## Restful风格编程
 
+在URL不改变的条件下，通过改变请求的方式来进行增删改查。
+
+```java
+@RequestMapping("add/a/b")
+public String test1(@PathVariable int a, @PathVariable int b){
+  //todo
+}
+//Restful风格通过这种方式取参数
+```
+
+* 查询GET:
+  
+```java
+     @GetMapping("url")
+     @RequstMapping(name= 'url',method={RequestMethod.GET} )
+  ```
+  
+* 删除DELETE:
+
+   ```java
+   @DeleteMapping()
+   //..
+   ```
+
+   
+
+* 更新POST:
+
+   ```java
+   @PostMapping("url")
+   //..
+   ```
+
+* 增加PUT:
+
+   ```java
+   @PutMapping()
+   //..
+   ```
+
+### 优缺点：
+
+* ==优点==：
+   * 最大的优点就是安全
+   * 简洁，风格简单
+   * 高效
 
