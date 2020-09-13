@@ -2,6 +2,9 @@
 
 # SpringCloud
 
+Sprgincloud架构图：
+![Springcloud](springcloud架构图.png)
+
 现今网站的基本架构：
 
 ![网站架构](网站架构.png)
@@ -774,3 +777,112 @@ public class ConfigBean {//@Configuration -- spring  applicationContext.xml
 
 ## Zuul路由网关
 
+> 什么是路由网关？
+> 能够在客户访问时隐藏端口地址，外部访问统一入口
+>
+> 最终实现，路由代理过滤
+>
+> 身份验证
+>
+> 自带了负载均衡
+
+### 小试牛刀
+
+1. 导入依赖
+
+   ```xml
+   <dependencies>
+       <!--导入zuul依赖-->
+       <dependency>
+           <groupId>org.springframework.cloud</groupId>
+           <artifactId>spring-cloud-starter-zuul</artifactId
+           <version>1.4.6.RELEASE</version>
+       </dependency>
+       <!--Hystrix依赖-->
+       <dependency>
+           <groupId>org.springframework.cloud</groupId>
+           <artifactId>spring-cloud-starter-hystrix</artifac
+           <version>1.4.6.RELEASE</version>
+       </dependency>
+       <!--dashboard依赖-->
+       <dependency>
+           <groupId>org.springframework.cloud</groupId>
+           <artifactId>spring-cloud-starter-hystrix-dashboar
+           <version>1.4.6.RELEASE</version>
+       </dependency>
+       <!--Ribbon-->
+       <dependency>
+           <groupId>org.springframework.cloud</groupId>
+           <artifactId>spring-cloud-starter-ribbon</artifact
+           <version>1.4.6.RELEASE</version>
+       </dependency>
+       <!--Eureka-->
+       <dependency>
+           <groupId>org.springframework.cloud</groupId>
+           <artifactId>spring-cloud-starter-eureka</artifact
+           <version>1.4.6.RELEASE</version>
+       </dependency>
+       <!--实体类+web-->
+       <dependency>
+           <groupId>com.haust</groupId>
+           <artifactId>springcloud-api</artifactId>
+           <version>1.0-SNAPSHOT</version>
+       </dependency>
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-starter-web</artifactId>
+       </dependency>
+       <!--热部署-->
+       <dependency>
+           <groupId>org.springframework.boot</groupId>
+           <artifactId>spring-boot-devtools</artifactId>
+       </dependency>
+   </dependencies>
+   
+   ```
+
+2. 写入配置文件：
+
+   ```yaml
+   server:
+     port: 9527
+   
+   spring:
+     application:
+       name: springcloud-zuul #微服务名称
+   
+   eureka:
+     client:
+       service-url:
+         defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+     instance: #实例的id
+       instance-id: zuul9527.com
+       prefer-ip-address: true # 显示ip
+   
+   info:
+     app.name: haust.springcloud #项目名称
+     company.name: haust #公司名称
+   
+   zuul:
+     routes:
+       mydept.serviceId: springcloud-provider-dept
+       mydept.path: /mydept/**
+       ignored-services: "*"  # 不能再使用某个(*：全部)路径访问了，ignored ： 忽略,隐藏全部的~
+       prefix: /kuagn # 设置公共的前缀,实现隐藏原有路由
+   
+   ```
+
+3. 在配置主启动类：
+
+   ```java
+   @SpringBootApplication
+   @EnableZuulProxy //开启Zuul
+   public class ZuulApplication_9527 {
+       public static void main(String[] args) {
+           SpringApplication.run(ZuulApplication_9527.class,args);
+       }
+   }
+   
+   ```
+
+   
