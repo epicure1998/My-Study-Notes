@@ -17,23 +17,37 @@ docker run -d --name nginx01 -p 10010:80 nginx
 # -d 后台运行
 # --name 给该容器起别名
 # -p 添加端口映射
-``` 
+```
 * `docker history [id]`查看镜像构建过程
 * `docker ps` 查看当前所有进程
 * 开启一个容器，并让他和主机（宿主机）共享一个网络
-```
+```bash
 docker run --name pmc01 --network host -it 63021699a0b9 /bin/bash
 ```
 * 
-```
+```bash
 docker run -p 10010:8080  -it fbcee2292447 /bin/bash ` 启动并切换目录
 ```
 * `docker stop [id]` 停止一个进程
+
+* 启动owncloud
+
+    ```bash
+    docker run -d --network host -v /data/owncloud/:/var/www/html owncloud
+    ```
+
+    
+
 * `docker inspect [id]` 查看镜像元数据
+
 * 进入当前正在运行的容器`docker exec -it [id] /bin/bash`
+    
     * `docker attach [id]`: 当前正在执行的代码
+    
 * `docker cp [container's id]:/path /host/path` 将容器内文件拷贝出来
+
 * control+p+q 
+
 * 
 ```
 docker ps -a | grep Exit | cut -d ' ' -f 1 | xargs docker rm 

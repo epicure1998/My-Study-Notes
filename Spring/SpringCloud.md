@@ -550,3 +550,227 @@ public class ConfigBean {//@Configuration -- spring  applicationContext.xml
 
    
 
+## Hystrix 服务熔断
+
+>复杂的分布式系统结构中的应用程序有数十个依赖关系，每个依赖关系在某些时候将不可避免的失败。
+>
+>服务的调用时串联的，连锁反应，服务雪崩。
+>
+>什么事服务雪崩？
+>
+>> 多个微服务之间调用的时候，假设微服务A调用微服务B和微服务C，微服务B和微服务C又调用其他的微服务，这就是所谓的“扇出”，如果扇出的链路上**某个微服务的调用响应时间过长，或者不可用**，对微服务A的调用就会占用越来越多的系统资源，进而引起系统崩溃，所谓的“雪崩效应”。
+>>
+>>  对于高流量的应用来说，单一的后端依赖可能会导致所有服务器上的所有资源都在几十秒内饱和。比失败更糟糕的是，这些应用程序还可能导致服务之间的延迟增加，备份队列，线程和其他系统资源紧张，导致整个系统发生更多的级联故障，这些都表示需要对故障和延迟进行隔离和管理，以便单个依赖关系的失败，不能取消整个应用程序或系统。
+>>
+>>  **我们需要，弃车保帅**
+
+### 什么是Hystrix:
+
+ Hystrix是一个应用于处理分布式系统的延迟和容错的开源库，在分布式系统里，许多依赖不可避免的会调用失败，比如超时，异常等，Hystrix能够保证在一个依赖出问题的情况下，不会导致整个体系服务失败，避免级联故障，以提高分布式系统的弹性。
+
+ “断路器”本身是一种开关装置，当某个服务单元发生故障之后，通过断路器的故障监控 (类似熔断保险丝) ，**向调用方方茴一个服务预期的，可处理的备选响应 (FallBack) ，而不是长时间的等待或者抛出调用方法无法处理的异常，这样就可以保证了服务调用方的线程不会被长时间，不必要的占用**，从而避免了故障在分布式系统中的蔓延，乃至雪崩。
+
+==设置一个阈值，当服务在一定的时间内得不到响应时启动熔断，执行后备方法。==
+
+### 怎么使用？
+
+1. 导入依赖
+
+   ```xml
+   <!--导入Hystrix依赖-->
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-hystrix</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   
+   ```
+
+   
+
+2. 配置
+
+   ```yaml
+   server:
+     port: 8001
+   
+   # mybatis配置
+   mybatis:
+     # springcloud-api 模块下的pojo包
+     type-aliases-package: com.haust.springcloud.pojo
+     # 本模块下的mybatis-config.xml核心配置文件类路径
+     config-location: classpath:mybatis/mybatis-config.xml
+     # 本模块下的mapper配置文件类路径
+     mapper-locations: classpath:mybatis/mapper/*.xml
+   
+   # spring配置
+   spring:
+     application:
+       #项目名
+       name: springcloud-provider-dept
+     datasource:
+       # 德鲁伊数据源
+       type: com.alibaba.druid.pool.DruidDataSource
+       driver-class-name: com.mysql.jdbc.Driver
+       url: jdbc:mysql://localhost:3306/db01?useUnicode=true&characterEncoding=utf-8
+       username: root
+       password: root
+   
+   # Eureka配置：配置服务注册中心地址
+   eureka:
+     client:
+       service-url:
+         # 注册中心地址7001-7003
+         defaultZone: http://eureka7001.com:7001/eureka/,http://eureka7002.com:7002/eureka/,http://eureka7003.com:7003/eureka/
+     instance:
+       instance-id: springcloud-provider-dept-hystrix-8001 #修改Eureka上的默认描述信息
+       prefer-ip-address: true #改为true后默认显示的是ip地址而不再是localhost
+   
+   #info配置
+   info:
+     app.name: haust-springcloud #项目的名称
+     company.name: com.haust #公司的名称
+   
+   ```
+
+3. 测试
+
+   ```java
+   //提供Restful服务
+   @RestController
+   public class DeptController {
+   
+       @Autowired
+       private DeptService deptService;
+       
+       @HystrixCommand(fallbackMethod = "hystrixGet")//如果根据id查询出现异常,走这段代码
+       @GetMapping("/dept/get/{id}")//根据id查询
+       public Dept get(@PathVariable("id") Long id){
+           Dept dept = deptService.queryById(id);
+   
+           if (dept==null){
+               throw new RuntimeException("这个id=>"+id+",不存在该用户，或信息无法找到~");
+           }
+           return dept;
+       }
+       
+       //根据id查询备选方案(熔断)
+       public Dept hystrixGet(@PathVariable("id") Long id){
+           
+           return new Dept().setDeptno(id)
+                   .setDname("这个id=>"+id+",没有对应的信息,null---@Hystrix~")
+                   .setDb_source("在MySQL中没有这个数据库");
+       }
+   }
+   
+   ```
+
+4. 在主启动类上加上注解`@EnableCircuitBreak`
+
+### Hystrix 对服务进行降级：
+
+在客户端在feign进行负载均衡的时候对服务进行降级，让某些服务不可用，以此来保证其他高并发服务的正常使用。整体的服务水平下降。
+
+ 在feign开启服务降级：
+
+> 服务熔断和服务降级的区别？
+
+- **服务熔断—>服务端**：某个服务超时或异常，引起熔断~，类似于保险丝(自我熔断)
+- **服务降级—>客户端**：从整体网站请求负载考虑，当某个服务熔断或者关闭之后，服务将不再被调用，此时在客户端，我们可以准备一个 FallBackFactory ，返回一个默认的值(缺省值)。会导致整体的服务下降，但是好歹能用，比直接挂掉强。
+- 触发原因不太一样，服务熔断一般是某个服务（下游服务）故障引起，而服务降级一般是从整体负荷考虑；管理目标的层次不太一样，熔断其实是一个框架级的处理，每个微服务都需要（无层级之分），而降级一般需要对业务有层级之分（比如降级一般是从最外围服务开始）
+- 实现方式不太一样，服务降级具有代码侵入性(由控制器完成/或自动降级)，熔断一般称为**自我熔断**。
+
+### Hystrix Dashboard监控
+
+1. 添加依赖
+
+   ```xml
+   <!--Hystrix依赖-->
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-hystrix</artifact
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   <!--dashboard依赖-->
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-hystrix-dashboard</artifactId>
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   <!--Ribbon-->
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-ribbon</artifactI
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   <!--Eureka-->
+   <dependency>
+       <groupId>org.springframework.cloud</groupId>
+       <artifactId>spring-cloud-starter-eureka</artifactI
+       <version>1.4.6.RELEASE</version>
+   </dependency>
+   <!--实体类+web-->
+   <dependency>
+       <groupId>com.haust</groupId>
+       <artifactId>springcloud-api</artifactId>
+       <version>1.0-SNAPSHOT</version>
+   </dependency>
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-web</artifactId>
+   </dependency>
+   <!--热部署-->
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-devtools</artifactId>
+   </dependency>
+   
+   ```
+
+2. 在主启动类添加
+
+   ```java
+   @SpringBootApplication
+   //开启Dashboard
+   @EnableHystrixDashboard
+   public class DeptConsumerDashboard_9001 {
+       public static void main(String[] args) {
+           SpringApplication.run(DeptConsumerDashboard_9001.class,args);
+       }
+   }
+   
+   ```
+
+3. 在provider模块主启动类下添加：
+
+   ```java
+   @SpringBootApplication
+   @EnableEurekaClient //EnableEurekaClient 客户端的启动类，在服务启动后自动向注册中心注册服务
+   public class DeptProvider_8001 {
+       public static void main(String[] args) {
+           SpringApplication.run(DeptProvider_8001.class,args);
+       }
+   
+       //增加一个 Servlet
+       @Bean
+       public ServletRegistrationBean hystrixMetricsStreamServlet(){
+           ServletRegistrationBean registrationBean = new ServletRegistrationBean(new HystrixMetricsStreamServlet());
+           //访问该页面就是监控页面
+           registrationBean.addUrlMappings("/actuator/hystrix.stream");
+          
+           return registrationBean;
+       }
+   }
+   
+   ```
+
+4. application.yaml更改端口号，因为默认是8080
+
+#### Hystrix Dashboard监控说明：
+
+![可视化监控](hystrixDashboard.png)
+
+
+
+## Zuul路由网关
+
