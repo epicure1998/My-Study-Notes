@@ -3,7 +3,7 @@
 # SpringCloud
 
 Sprgincloud架构图：
-![Springcloud](springcloud架构图.png)
+![Springcloud](Springcloud架构图.png)
 
 现今网站的基本架构：
 
