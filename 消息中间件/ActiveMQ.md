@@ -123,3 +123,22 @@ JAVAEE中的一个模块
 Broker 相当于实例化的activeMQ
 
 `./activemq start xbean:file:/....`启动指定配置文件
+
+##  ActiveMQ传输协议
+
+![image-20201023233846622](/Users/apple/Desktop/My-Study-Notes/消息中间件/image-20201023233846622.png)
+
+### TCP:
+
+配置格式：`tcp//hostname:port?key=value`
+
+### NIO: 
+
+适用场景：
+
+1. 可能有大量的Client去连接到Broker, 一般情况下，大量的Client
+
+ ## 消息中间件的持久化
+
+
+
